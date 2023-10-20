@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 
 class GiveMomentCommand(Command):
-    CLAIMABLE_DURATION_MIN = 1
+    CLAIMABLE_DURATION_MIN = 3
 
     def __init__(self, twitch: Twitch, channel: str, broadcaster_id: str, moderator_id: str,
                  scheduler: AsyncIOScheduler):
