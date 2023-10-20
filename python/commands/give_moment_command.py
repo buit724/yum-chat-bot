@@ -40,8 +40,8 @@ class GiveMomentCommand(Command):
         self.claimed_users = set()
 
         channel_info: ChannelInformation = (await self.twitch.get_channel_information(self.broadcaster_id))[0]
-        msg: str = (f'A moment has been started for the game "{channel_info.game_name}". It can be claimed within the '
-                    f'next {self.CLAIMABLE_DURATION_MIN} minutes (until {time_utils.format_datetime_tz_unaware(self.moment_claim_end_time)})')
+        msg: str = (f'A moment has been started for the game "{channel_info.game_name}". It can be claimed by typing '
+                    f'!yumcm within the next {self.CLAIMABLE_DURATION_MIN} minutes (until {time_utils.format_datetime_tz_unaware(self.moment_claim_end_time)})')
         await self.twitch.send_chat_announcement(self.broadcaster_id, self.moderator_id, msg, "blue")
 
         self.scheduler.add_job(self.turn_off_moment, next_run_time=self.moment_claim_end_time)

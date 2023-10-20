@@ -14,6 +14,7 @@ from twitchAPI.type import AuthScope, ChatEvent
 from python.commands.claim_moment_command import ClaimMomentCommand
 from python.commands.give_moment_command import GiveMomentCommand
 from python.commands.pyramid_command import PyramidCommand
+from python.commands.show_commands_command import ShowCommandsCommand
 
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT, AuthScope.MODERATOR_MANAGE_ANNOUNCEMENTS]
 
@@ -55,25 +56,30 @@ async def main():
     scheduler: AsyncIOScheduler = AsyncIOScheduler()
 
     # Register commands
+    chat.set_prefix("!yum")
+
+    # Show available commands
+    show_commands_command: ShowCommandsCommand = ShowCommandsCommand()
+    chat.register_command("commands", show_commands_command.process_command)
+
     # Pyramid command
     pyramid_command: PyramidCommand = PyramidCommand()
-    chat.register_command("yum_pyramid", pyramid_command.process_command)
+    chat.register_command("p", pyramid_command.process_command)
 
     # Give moment command
     give_moment_command: GiveMomentCommand = GiveMomentCommand(twitch, broadcaster, broadcaster_id, moderator_id,
                                                                scheduler)
-    chat.register_command("yum_give_moment", give_moment_command.process_command)
+    chat.register_command("gm", give_moment_command.process_command)
 
     # Claim moment command
     claim_moment_command: ClaimMomentCommand = ClaimMomentCommand(broadcaster, give_moment_command)
-    chat.register_command("yum_claim_moment", claim_moment_command.process_command)
+    chat.register_command("cm", claim_moment_command.process_command)
 
     # we are done with our setup, lets start this bot up!
     chat.start()
 
     # Let the bot run in the background until we force quit
     try:
-        # print("Hello")
         # Run schedule tasks here for now
         scheduler.start()
         # scheduler.add_job(start_up)
