@@ -15,14 +15,14 @@ class PyramidCommand(Command):
         """
         return "pyramid"
 
-    async def process_command(self, cmd: ChatCommand):
+    async def process_command(self, cmd: ChatCommand) -> None:
         """
         Send multiple messages to build a pyramid with width specified by the user using the specified emote
         Usage: !yum_pyramid [emote] [pyramid_width <= 5]
         :param cmd:     The command with the emote and
         :return:
         """
-
+        # TODO update so that only allowed users can use this command
         build_pyramid_usage: str = f"Usage: !yum_pyramid [emote] [pyramid_width <= {self.MAX_PYRAMID_WIDTH}]"
         args: List[str] = cmd.parameter.strip().split()
 

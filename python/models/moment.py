@@ -9,7 +9,7 @@ from python.models.base import Base
 class Moment(Base):
     __tablename__ = "moment"
 
-    id: id = Column(Integer, primary_key=True)
+    id: id = Column(Integer, primary_key=True, autoincrement=True)
     name: str = Column(String, nullable=False)
     description: str = Column(String, nullable=False)
     game_id: id = Column(Integer, ForeignKey("game.id"), nullable=False)

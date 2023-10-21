@@ -1,6 +1,8 @@
 from typing import List
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import sessionmaker, Session
 from twitchAPI.chat import Chat, ChatMessage, EventData
 from twitchAPI.object.api import TwitchUser
 from twitchAPI.twitch import Twitch
@@ -16,6 +18,7 @@ from python.commands.command import Command
 from python.commands.start_moment_command import StartMomentCommand
 from python.commands.pyramid_command import PyramidCommand
 from python.commands.show_commands_command import ShowCommandsCommand
+from python.repositories.repository_provider import RepositoryProvider
 from python.state.global_state import GlobalState
 
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT, AuthScope.MODERATOR_MANAGE_ANNOUNCEMENTS]
@@ -64,8 +67,8 @@ async def main():
     await twitch.set_user_authentication(config['token']['TOKEN'], USER_SCOPE, config['token']['REFRESH_TOKEN'])
 
     # get broadcaster id (ie channel id) and moderator id (ie the bot id that should be a moderator for the channel)
-    broadcaster: str = config['channel']['broadcaster']
-    users: List[TwitchUser] = [x async for x in twitch.get_users(logins=[broadcaster, config['channel']['BOT']])]
+    users: List[TwitchUser] = [x async for x in twitch.get_users(logins=[config['channel']['broadcaster'],
+                                                                         config['channel']['BOT']])]
     broadcaster_id: str = users[0].id
     moderator_id: str = users[1].id
 
@@ -80,6 +83,9 @@ async def main():
     # Setup objects
     scheduler: AsyncIOScheduler = AsyncIOScheduler()
     global_state: GlobalState = GlobalState()
+    engine: Engine = create_engine(f"sqlite:///{config['database']['PATH']}", echo=True)
+    session: Session = sessionmaker(bind=engine)()
+    repository_provider: RepositoryProvider = RepositoryProvider(session)
 
     # Set prefix so it is different from other bot commands
     chat.set_prefix(COMMAND_PREFIX)
@@ -87,8 +93,9 @@ async def main():
     # Register commands
     command_names = add_commands(chat, [
         PyramidCommand(),
-        StartMomentCommand(global_state, twitch, broadcaster, broadcaster_id, moderator_id, COMMAND_PREFIX, scheduler),
-        ClaimMomentCommand(global_state, broadcaster)
+        StartMomentCommand(global_state, repository_provider, twitch, broadcaster_id, moderator_id,
+                           COMMAND_PREFIX, scheduler),
+        ClaimMomentCommand(global_state, repository_provider)
     ])
 
     # Register show available commands

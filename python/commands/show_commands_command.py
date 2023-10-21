@@ -22,7 +22,7 @@ class ShowCommandsCommand(Command):
         """
         return "commands"
 
-    async def process_command(self, cmd: ChatCommand):
+    async def process_command(self, cmd: ChatCommand) -> None:
         """
         Show all the available commands
         :return: The ChatCommand object with the command arguments

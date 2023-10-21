@@ -7,7 +7,7 @@ from python.models.base import Base
 class User(Base):
     __tablename__ = "user"
 
-    id: int = Column(Integer,primary_key=True)
+    id: int = Column(Integer, primary_key=True)
     display_name: str = Column(String, nullable=False)
     
     def __init__(self, id: int, display_name: str):

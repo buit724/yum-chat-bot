@@ -9,9 +9,7 @@ from python.models.user import User
 from python.models.user_moment_assoc import UserMomentAssoc
 
 if __name__ == "__main__":
-    engine: Engine = create_engine("sqlite:///C:/Users/thoai/databases/yumbot.db", echo=True)
-    # Session = sessionmaker(bind=engine)
-    # session = Session()
+    engine: Engine = create_engine("sqlite:///C:\\Users\\thoai\\databases\\yumbot.db", echo=True)
 
     # Create session
     session: Session = sessionmaker(bind=engine)()
@@ -19,7 +17,7 @@ if __name__ == "__main__":
     print(games)
 
     users: List[Type[User]] = session.query(User).all()
-    print(games)
+    print(users)
 
     moments: List[Type[Moment]] = session.query(Moment).all()
     print(moments)

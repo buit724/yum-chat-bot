@@ -1,4 +1,5 @@
 import abc
+from typing import Awaitable
 
 from twitchAPI.chat import ChatCommand
 
@@ -13,7 +14,7 @@ class Command:
         pass
 
     @abc.abstractmethod
-    async def process_command(self, cmd: ChatCommand):
+    async def process_command(self, cmd: ChatCommand) -> None:
         """
         Process the command sent
         :return: The ChatCommand object with the command arguments

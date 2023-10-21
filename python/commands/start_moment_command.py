@@ -7,21 +7,23 @@ import python.utils.time_utils as time_utils
 from python.commands.command import Command
 from datetime import datetime, timedelta
 
+from python.models.game import Game
 from python.models.moment import Moment
+from python.repositories.repository_provider import RepositoryProvider
 from python.state.global_state import GlobalState
 
 
 class StartMomentCommand(Command):
     CLAIMABLE_DURATION_MIN = 1
 
-    def __init__(self, global_state: GlobalState, twitch: Twitch, channel: str, broadcaster_id: str, moderator_id: str,
-                 command_prefix: str, scheduler: AsyncIOScheduler):
-        self.global_state = global_state
+    def __init__(self, global_state: GlobalState, repository_provider: RepositoryProvider, twitch: Twitch,
+                 broadcaster_id: str, moderator_id: str, command_prefix: str, scheduler: AsyncIOScheduler):
+        self.global_state: GlobalState = global_state
+        self.repository_provider: RepositoryProvider = repository_provider
         self.twitch: Twitch = twitch
-        self.channel: str = channel
         self.broadcaster_id: str = broadcaster_id
-        self.moderator_id = moderator_id
-        self.command_prefix = command_prefix
+        self.moderator_id: str = moderator_id
+        self.command_prefix: str = command_prefix
         self.scheduler: AsyncIOScheduler = scheduler
 
     def get_name(self) -> str:
@@ -31,7 +33,7 @@ class StartMomentCommand(Command):
         """
         return "startmoment"
 
-    async def process_command(self, cmd: ChatCommand):
+    async def process_command(self, cmd: ChatCommand) -> None:
         """
         Enable moment to be claimed by users, no arguments needed
         :param cmd: The give moment command
@@ -51,8 +53,9 @@ class StartMomentCommand(Command):
         # Start the moment
         channel_info: ChannelInformation = (await self.twitch.get_channel_information(self.broadcaster_id))[0]
         start_time: datetime = datetime.now()
-        moment: Moment = Moment(name, int(channel_info.game_id), start_time,
-                                start_time + timedelta(minutes=self.CLAIMABLE_DURATION_MIN))
+        end_time: datetime = start_time + timedelta(minutes=self.CLAIMABLE_DURATION_MIN)
+        game: Game = self.repository_provider.game_repository.find_game(int(channel_info.game_id), channel_info.game_name)
+        moment: Moment = self.repository_provider.moment_repository.add_moment(Moment(name, game.id, start_time, end_time))
         self.global_state.start_moment(moment)
 
         # Alert user with the option to add a description
@@ -82,4 +85,3 @@ class StartMomentCommand(Command):
 
         # End the moment
         self.global_state.end_moment()
-

@@ -24,7 +24,8 @@ CREATE TABLE user_moment_assoc (
 	user_id INTEGER NOT NULL,
 	moment_id INTEGER NOT NULL,
 	claimed_time TEXT NOT NULL,
-	
+
+	UNIQUE(user_id, moment_id),
 	FOREIGN KEY(user_id) REFERENCES user(id) ON DELETE CASCADE,
 	FOREIGN KEY(moment_id) REFERENCES moment(id) ON DELETE CASCADE
 );
