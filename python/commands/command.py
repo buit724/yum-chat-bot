@@ -1,7 +1,18 @@
+import abc
+
 from twitchAPI.chat import ChatCommand
 
 
 class Command:
+    @abc.abstractmethod
+    def get_name(self) -> str:
+        """
+        Get the name of this command
+        :return: The name of this command
+        """
+        pass
+
+    @abc.abstractmethod
     async def process_command(self, cmd: ChatCommand):
         """
         Process the command sent

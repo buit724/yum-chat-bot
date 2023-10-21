@@ -8,6 +8,13 @@ from python.commands.command import Command
 class PyramidCommand(Command):
     MAX_PYRAMID_WIDTH: int = 5
 
+    def get_name(self) -> str:
+        """
+        Get the name of this build pyramid command
+        :return: Name of build pyramid command
+        """
+        return "pyramid"
+
     async def process_command(self, cmd: ChatCommand):
         """
         Send multiple messages to build a pyramid with width specified by the user using the specified emote

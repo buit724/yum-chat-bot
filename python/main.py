@@ -1,7 +1,7 @@
-from typing import Callable, Awaitable, List
+from typing import List
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from twitchAPI.chat import Chat, ChatMessage, EventData, ChatCommand
+from twitchAPI.chat import Chat, ChatMessage, EventData
 from twitchAPI.object.api import TwitchUser
 from twitchAPI.twitch import Twitch
 
@@ -12,12 +12,13 @@ import sys
 from twitchAPI.type import AuthScope, ChatEvent
 
 from python.commands.claim_moment_command import ClaimMomentCommand
-from python.commands.give_moment_command import GiveMomentCommand
+from python.commands.command import Command
+from python.commands.start_moment_command import StartMomentCommand
 from python.commands.pyramid_command import PyramidCommand
 from python.commands.show_commands_command import ShowCommandsCommand
 
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT, AuthScope.MODERATOR_MANAGE_ANNOUNCEMENTS]
-COMMAND_PREFIX = "!yum"
+COMMAND_PREFIX = "!y"
 
 
 # this will be called when the event READY is triggered, which will be on bot start
@@ -34,21 +35,30 @@ async def on_message(msg: ChatMessage):
     print(f"Got a message from {msg.user.display_name}: {msg.text}")
 
 
-def add_command(chat: Chat, command: str, handler: Callable[[ChatCommand], Awaitable[None]]) -> str:
+def add_commands(chat: Chat, commands: List[Command]) -> List[str]:
+    """
+    Register all commands to chat
+    :param chat:        The chat
+    :param commands:    The commands
+    :return: The names of added commands
+    """
+    return [add_command(chat, x) for x in commands]
+
+
+def add_command(chat: Chat, command: Command) -> str:
     """
     Register the command to the chat and returns the name of the command. Should use this to keep track of all
     the commands we have added
     :param chat:    The chat
     :param command: The command name
-    :param handler: The command handler
     :return:    The command name
     """
-    chat.register_command(command, handler)
-    return command
+    chat.register_command(command.get_name(), command.process_command)
+    return command.get_name()
 
 
 async def main():
-    # initialize the twitch instance, this will by default also create an app authentication for you
+    # initialize the twitch instance with both app and user tokens
     twitch: Twitch = await Twitch(config['app']['CLIENT_ID'], config['app']['CLIENT_SECRET'])
     await twitch.set_user_authentication(config['token']['TOKEN'], USER_SCOPE, config['token']['REFRESH_TOKEN'])
 
@@ -63,31 +73,30 @@ async def main():
 
     # listen to when the bot is done starting up and ready to join channels
     chat.register_event(ChatEvent.READY, on_ready)
-    # listen to chat messages
+    # listen to chat messages (for here so we can easily see what channel we're in and getting messages)
     chat.register_event(ChatEvent.MESSAGE, on_message)
 
     scheduler: AsyncIOScheduler = AsyncIOScheduler()
 
-    # Register commands
+    # Set prefix so it is different from other bot commands
     chat.set_prefix(COMMAND_PREFIX)
-    commands: List[str] = []
 
-    # Pyramid command
+    # Create command objects
     pyramid_command: PyramidCommand = PyramidCommand()
-    commands.append(add_command(chat, "p", pyramid_command.process_command))
-
-    # Give moment command
-    give_moment_command: GiveMomentCommand = GiveMomentCommand(twitch, broadcaster, broadcaster_id, moderator_id,
-                                                               scheduler)
-    commands.append(add_command(chat, "gm", give_moment_command.process_command))
-
-    # Claim moment command
+    give_moment_command: StartMomentCommand = StartMomentCommand(twitch, broadcaster, broadcaster_id, moderator_id,
+                                                                 scheduler)
     claim_moment_command: ClaimMomentCommand = ClaimMomentCommand(broadcaster, give_moment_command)
-    commands.append(add_command(chat, "cm", claim_moment_command.process_command))
 
-    # Show available commands
-    show_commands_command: ShowCommandsCommand = ShowCommandsCommand(COMMAND_PREFIX, commands)
-    chat.register_command("commands", show_commands_command.process_command)
+    # Register commands
+    command_names = add_commands(chat, [
+        pyramid_command,
+        give_moment_command,
+        claim_moment_command
+    ])
+
+    # Register show available commands
+    show_commands_command: ShowCommandsCommand = ShowCommandsCommand(COMMAND_PREFIX, command_names)
+    add_command(chat, show_commands_command)
 
     # we are done with our setup, lets start this bot up!
     chat.start()

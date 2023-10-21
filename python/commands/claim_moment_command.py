@@ -1,13 +1,21 @@
 from twitchAPI.chat import ChatCommand
 
 from python.commands.command import Command
-from python.commands.give_moment_command import GiveMomentCommand
+from python.commands.start_moment_command import StartMomentCommand
 
 
 class ClaimMomentCommand(Command):
-    def __init__(self, channel: str, give_moment_command: GiveMomentCommand):
+
+    def __init__(self, channel: str, give_moment_command: StartMomentCommand):
         self.channel: str = channel
-        self.give_moment_command: GiveMomentCommand = give_moment_command
+        self.give_moment_command: StartMomentCommand = give_moment_command
+
+    def get_name(self) -> str:
+        """
+        Get the name of claim moment command
+        :return: The name of claim moment command
+        """
+        return "claimmoment"
 
     async def process_command(self, cmd: ChatCommand):
         """

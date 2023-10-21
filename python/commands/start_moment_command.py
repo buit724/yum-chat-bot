@@ -10,7 +10,7 @@ from python.commands.command import Command
 from datetime import datetime, timedelta
 
 
-class GiveMomentCommand(Command):
+class StartMomentCommand(Command):
     CLAIMABLE_DURATION_MIN = 3
 
     def __init__(self, twitch: Twitch, channel: str, broadcaster_id: str, moderator_id: str,
@@ -23,6 +23,13 @@ class GiveMomentCommand(Command):
         self.moment_claimable: bool = False
         self.moment_claim_end_time: Union[datetime, Optional] = None
         self.claimed_users: Set[str] = set()
+
+    def get_name(self) -> str:
+        """
+        The name of this start moment comment
+        :return:
+        """
+        return "startmoment"
 
     async def process_command(self, cmd: ChatCommand):
         """
