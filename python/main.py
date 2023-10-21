@@ -1,4 +1,4 @@
-from typing import AsyncGenerator, Callable, Awaitable, List
+from typing import Callable, Awaitable, List
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from twitchAPI.chat import Chat, ChatMessage, EventData, ChatCommand
@@ -54,10 +54,9 @@ async def main():
 
     # get broadcaster id (ie channel id) and moderator id (ie the bot id that should be a moderator for the channel)
     broadcaster: str = config['channel']['broadcaster']
-    users: AsyncGenerator[TwitchUser, None] = twitch.get_users(logins=[broadcaster, config['channel']['BOT']])
-    user_ids = [x.id async for x in users]
-    broadcaster_id: str = user_ids[0]
-    moderator_id: str = user_ids[1]
+    users: List[TwitchUser] = [x async for x in twitch.get_users(logins=[broadcaster, config['channel']['BOT']])]
+    broadcaster_id: str = users[0].id
+    moderator_id: str = users[1].id
 
     # Setting chat object for events
     chat: Chat = await Chat(twitch)
