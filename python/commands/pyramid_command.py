@@ -24,7 +24,7 @@ class PyramidCommand(Command):
         """
 
         build_pyramid_usage: str = f"Usage: !yum_pyramid [emote] [pyramid_width <= {self.MAX_PYRAMID_WIDTH}]"
-        args: List[str] = cmd.parameter.strip().split(" ")
+        args: List[str] = cmd.parameter.strip().split()
 
         # Arg count check (at least 2)
         if len(args) < 2:

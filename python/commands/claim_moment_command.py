@@ -1,14 +1,15 @@
 from twitchAPI.chat import ChatCommand
 
 from python.commands.command import Command
-from python.commands.start_moment_command import StartMomentCommand
+from python.models.user import User
+from python.state.global_state import GlobalState
 
 
 class ClaimMomentCommand(Command):
 
-    def __init__(self, channel: str, give_moment_command: StartMomentCommand):
+    def __init__(self, global_state: GlobalState, channel: str):
+        self.global_state = global_state
         self.channel: str = channel
-        self.give_moment_command: StartMomentCommand = give_moment_command
 
     def get_name(self) -> str:
         """
@@ -23,16 +24,18 @@ class ClaimMomentCommand(Command):
         :param cmd: The give moment command
         :return: NONE
         """
-        # TODO - might need to do some locking here for multi threading processing
-        if not self.give_moment_command.is_moment_currently_going():
+        # No moment going on at the moment
+        if self.global_state.current_moment is None:
             await cmd.reply("There is no moment that can be claimed at this time")
             return
 
-        user: str = cmd.user.name
-        user_added: bool = self.give_moment_command.add_user(user)
-        if not user_added:
+        user: User = User(int(cmd.user.id), cmd.user.display_name)
+
+        # User already claimed this moment
+        if not self.global_state.add_claimed_user(user):
             await cmd.reply("Error - You have already claimed this moment")
             return
 
+        print(f"User {user.display_name} with id {user.id} has claimed the moment")
         await cmd.reply("You have claimed this moment")
     

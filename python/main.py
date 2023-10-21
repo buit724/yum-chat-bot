@@ -16,6 +16,7 @@ from python.commands.command import Command
 from python.commands.start_moment_command import StartMomentCommand
 from python.commands.pyramid_command import PyramidCommand
 from python.commands.show_commands_command import ShowCommandsCommand
+from python.state.global_state import GlobalState
 
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT, AuthScope.MODERATOR_MANAGE_ANNOUNCEMENTS]
 COMMAND_PREFIX = "!y"
@@ -76,22 +77,18 @@ async def main():
     # listen to chat messages (for here so we can easily see what channel we're in and getting messages)
     chat.register_event(ChatEvent.MESSAGE, on_message)
 
+    # Setup objects
     scheduler: AsyncIOScheduler = AsyncIOScheduler()
+    global_state: GlobalState = GlobalState()
 
     # Set prefix so it is different from other bot commands
     chat.set_prefix(COMMAND_PREFIX)
 
-    # Create command objects
-    pyramid_command: PyramidCommand = PyramidCommand()
-    give_moment_command: StartMomentCommand = StartMomentCommand(twitch, broadcaster, broadcaster_id, moderator_id,
-                                                                 scheduler)
-    claim_moment_command: ClaimMomentCommand = ClaimMomentCommand(broadcaster, give_moment_command)
-
     # Register commands
     command_names = add_commands(chat, [
-        pyramid_command,
-        give_moment_command,
-        claim_moment_command
+        PyramidCommand(),
+        StartMomentCommand(global_state, twitch, broadcaster, broadcaster_id, moderator_id, COMMAND_PREFIX, scheduler),
+        ClaimMomentCommand(global_state, broadcaster)
     ])
 
     # Register show available commands
