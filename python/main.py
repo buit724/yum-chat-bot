@@ -15,6 +15,8 @@ from twitchAPI.type import AuthScope, ChatEvent
 
 from python.commands.claim_moment_command import ClaimMomentCommand
 from python.commands.command import Command
+from python.commands.edit_moment_description_command import EditMomentDescriptionCommand
+from python.commands.edit_moment_name_command import EditMomentNameCommand
 from python.commands.start_moment_command import StartMomentCommand
 from python.commands.pyramid_command import PyramidCommand
 from python.commands.show_commands_command import ShowCommandsCommand
@@ -90,12 +92,25 @@ async def main():
     # Set prefix so it is different from other bot commands
     chat.set_prefix(COMMAND_PREFIX)
 
+    # Create commands
+    pyramid_cmd: PyramidCommand = PyramidCommand()
+    edit_moment_name_cmd: EditMomentNameCommand = EditMomentNameCommand(global_state, repository_provider)
+    edit_moment_description_cmd: EditMomentDescriptionCommand = EditMomentDescriptionCommand(global_state,
+                                                                                             repository_provider)
+    claim_moment_cmd: ClaimMomentCommand = ClaimMomentCommand(global_state, repository_provider)
+    start_moment_cmd: StartMomentCommand = StartMomentCommand(global_state, repository_provider, scheduler, twitch,
+                                                              broadcaster_id, moderator_id, COMMAND_PREFIX,
+                                                              claim_moment_cmd.get_name(),
+                                                              edit_moment_name_cmd.get_name(),
+                                                              edit_moment_description_cmd.get_name())
+
     # Register commands
     command_names = add_commands(chat, [
-        PyramidCommand(),
-        StartMomentCommand(global_state, repository_provider, twitch, broadcaster_id, moderator_id,
-                           COMMAND_PREFIX, scheduler),
-        ClaimMomentCommand(global_state, repository_provider)
+        pyramid_cmd,
+        edit_moment_name_cmd,
+        edit_moment_description_cmd,
+        start_moment_cmd,
+        claim_moment_cmd
     ])
 
     # Register show available commands

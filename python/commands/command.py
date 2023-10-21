@@ -1,5 +1,4 @@
 import abc
-from typing import Awaitable
 
 from twitchAPI.chat import ChatCommand
 

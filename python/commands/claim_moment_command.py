@@ -24,7 +24,7 @@ class ClaimMomentCommand(Command):
 
     async def process_command(self, cmd: ChatCommand) -> None:
         """
-        Clime the ongoing moment for this user
+        Claim the ongoing moment for this user
         :param cmd: The give moment command
         :return: NONE
         """
