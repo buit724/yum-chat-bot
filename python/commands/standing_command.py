@@ -33,5 +33,12 @@ class StandingCommand(Command):
         """
         # Get the top 10 users with the most moments and send to chat
         top_10_users: List[str, int] = self.repository_provider.user_moment_assoc_repository.user_moment_counts()[:10]
+
+        # Check if anyone has claimed a moment yet
+        if len(top_10_users) == 0:
+            await cmd.reply("Nobody has claimed a moment yet")
+            return
+
+        # Has something to show
         msg: str = ", ".join([f'{x[0]} ({x[1]})' for x in top_10_users])
         await cmd.reply(f'@{cmd.user.display_name} {msg}')
