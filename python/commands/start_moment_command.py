@@ -1,5 +1,8 @@
+from typing import List, Union
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from twitchAPI.chat import ChatCommand
+from twitchAPI.chat.middleware import StreamerOnly, BaseCommandMiddleware
 from twitchAPI.object.api import ChannelInformation
 from twitchAPI.twitch import Twitch
 
@@ -36,6 +39,13 @@ class StartMomentCommand(Command):
         :return:
         """
         return "startmoment"
+
+    def get_middleware(self) -> Union[List[BaseCommandMiddleware], None]:
+        """
+        Only the streamer can use this command
+        :return: The streamer only middleware
+        """
+        return [StreamerOnly()]
 
     async def process_command(self, cmd: ChatCommand) -> None:
         """

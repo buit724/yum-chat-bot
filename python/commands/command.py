@@ -1,6 +1,8 @@
 import abc
+from typing import List, Union
 
 from twitchAPI.chat import ChatCommand
+from twitchAPI.chat.middleware import BaseCommandMiddleware
 
 
 class Command:
@@ -9,6 +11,14 @@ class Command:
         """
         Get the name of this command
         :return: The name of this command
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_middleware(self) -> Union[List[BaseCommandMiddleware], None]:
+        """
+        Returns the middle, default to empty middleware if everybody can use it
+        :return:
         """
         pass
 

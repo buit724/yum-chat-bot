@@ -1,7 +1,7 @@
-from typing import Union
+from typing import Union, List
 
 from twitchAPI.chat import ChatCommand
-
+from twitchAPI.chat.middleware import BaseCommandMiddleware
 from python.commands.command import Command
 from python.models.moment import Moment
 from python.models.user import User
@@ -10,6 +10,13 @@ from python.state.global_state import GlobalState
 
 
 class ClaimMomentCommand(Command):
+
+    def get_middleware(self) -> Union[List[BaseCommandMiddleware], None]:
+        """
+        Everybody can use this command
+        :return: None
+        """
+        return None
 
     def __init__(self, global_state: GlobalState, repository_provider: RepositoryProvider):
         self.global_state = global_state

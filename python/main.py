@@ -59,7 +59,7 @@ def add_command(chat: Chat, command: Command) -> str:
     :param command: The command name
     :return:    The command name
     """
-    chat.register_command(command.get_name(), command.process_command)
+    chat.register_command(command.get_name(), command.process_command, command.get_middleware())
     return command.get_name()
 
 

@@ -1,12 +1,20 @@
-from typing import List
+from typing import List, Union
 
 from twitchAPI.chat import ChatCommand
+from twitchAPI.chat.middleware import UserRestriction, BaseCommandMiddleware
 
 from python.commands.command import Command
 
 
 class PyramidCommand(Command):
     MAX_PYRAMID_WIDTH: int = 5
+
+    def get_middleware(self) -> Union[List[BaseCommandMiddleware], None]:
+        """
+        Only myself can use it
+        :return: The user middleware with only myself
+        """
+        return [UserRestriction(allowed_users=['buit724'])]
 
     def get_name(self) -> str:
         """
@@ -22,7 +30,6 @@ class PyramidCommand(Command):
         :param cmd:     The command with the emote and
         :return:
         """
-        # TODO update so that only allowed users can use this command
         build_pyramid_usage: str = f"Usage: !yum_pyramid [emote] [pyramid_width <= {self.MAX_PYRAMID_WIDTH}]"
         args: List[str] = cmd.parameter.strip().split()
 

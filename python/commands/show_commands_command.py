@@ -1,6 +1,7 @@
-from typing import List
+from typing import List, Union
 
 from twitchAPI.chat import ChatCommand
+from twitchAPI.chat.middleware import BaseCommandMiddleware
 
 from python.commands.command import Command
 
@@ -21,6 +22,13 @@ class ShowCommandsCommand(Command):
         :return: Name of show all commands command
         """
         return "commands"
+
+    def get_middleware(self) -> Union[List[BaseCommandMiddleware], None]:
+        """
+        Everybody can use this command
+        :return: None
+        """
+        return None
 
     async def process_command(self, cmd: ChatCommand) -> None:
         """

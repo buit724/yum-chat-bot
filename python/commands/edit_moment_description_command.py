@@ -1,6 +1,7 @@
-from typing import Union
+from typing import Union, List
 
 from twitchAPI.chat import ChatCommand
+from twitchAPI.chat.middleware import BaseCommandMiddleware, StreamerOnly
 
 from python.commands.command import Command
 from python.models.moment import Moment
@@ -20,6 +21,13 @@ class EditMomentDescriptionCommand(Command):
         :return: The name of this edit moment description command
         """
         return "editmomentdesc"
+
+    def get_middleware(self) -> Union[List[BaseCommandMiddleware], None]:
+        """
+        Only the streamer can use this command
+        :return: The streamer only middleware
+        """
+        return [StreamerOnly()]
 
     async def process_command(self, cmd: ChatCommand) -> None:
         """
