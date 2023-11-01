@@ -33,6 +33,7 @@ class ShowCommandsCommand(Command):
     async def process_command(self, cmd: ChatCommand) -> None:
         """
         Show all the available commands
-        :return: The ChatCommand object with the command arguments
+        :param cmd:     The ChatCommand object with the command arguments
+        :return:
         """
         await cmd.reply(f"Available yum commands are: {self.commands}")

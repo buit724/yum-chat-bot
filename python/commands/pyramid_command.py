@@ -27,7 +27,7 @@ class PyramidCommand(Command):
         """
         Send multiple messages to build a pyramid with width specified by the user using the specified emote
         Usage: !yum_pyramid [emote] [pyramid_width <= 5]
-        :param cmd:     The command with the emote and
+        :param cmd:     The command with the emote and width
         :return:
         """
         build_pyramid_usage: str = f"Usage: !yum_pyramid [emote] [pyramid_width <= {self.MAX_PYRAMID_WIDTH}]"

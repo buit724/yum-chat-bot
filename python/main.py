@@ -19,6 +19,8 @@ from python.commands.claim_moment_command import ClaimMomentCommand
 from python.commands.command import Command
 from python.commands.edit_moment_description_command import EditMomentDescriptionCommand
 from python.commands.edit_moment_name_command import EditMomentNameCommand
+from python.commands.my_standing_command import MyStandingCommand
+from python.commands.standing_command import StandingCommand
 from python.commands.start_moment_command import StartMomentCommand
 from python.commands.pyramid_command import PyramidCommand
 from python.commands.show_commands_command import ShowCommandsCommand
@@ -74,7 +76,7 @@ async def main():
     await twitch.set_user_authentication(config['token']['TOKEN'], USER_SCOPE, config['token']['REFRESH_TOKEN'])
 
     # get broadcaster id (ie channel id) and moderator id (ie the bot id that should be a moderator for the channel)
-    users: List[TwitchUser] = [x async for x in twitch.get_users(logins=[config['channel']['broadcaster'],
+    users: List[TwitchUser] = [x async for x in twitch.get_users(logins=[config['channel']['BROADCASTER'],
                                                                          config['channel']['BOT']])]
     broadcaster_id: str = users[0].id
     moderator_id: str = users[1].id
@@ -92,7 +94,7 @@ async def main():
     global_state: GlobalState = GlobalState()
 
     # Create sqlalchemy engine that enforce sqlite fk
-    engine: Engine = create_engine(f"sqlite:///{config['database']['PATH']}", echo=True)
+    engine: Engine = create_engine(f"sqlite:///{config['database']['PATH']}", echo=config['database'].getboolean('DEBUG'))
     event.listen(engine, 'connect', lambda c, _: c.execute('pragma foreign_keys=on'))
     session: Session = sessionmaker(bind=engine)()
     repository_provider: RepositoryProvider = RepositoryProvider(session)
@@ -102,6 +104,8 @@ async def main():
 
     # Create commands
     pyramid_cmd: PyramidCommand = PyramidCommand()
+    standing_cmd: StandingCommand = StandingCommand(repository_provider)
+    my_standing_cmd: MyStandingCommand = MyStandingCommand(repository_provider)
     edit_moment_name_cmd: EditMomentNameCommand = EditMomentNameCommand(global_state, repository_provider)
     edit_moment_description_cmd: EditMomentDescriptionCommand = EditMomentDescriptionCommand(global_state,
                                                                                              repository_provider)
@@ -119,6 +123,8 @@ async def main():
     # Register commands
     command_names = add_commands(chat, [
         pyramid_cmd,
+        standing_cmd,
+        my_standing_cmd,
         edit_moment_name_cmd,
         edit_moment_description_cmd,
         claim_moment_cmd,
