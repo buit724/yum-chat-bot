@@ -63,10 +63,7 @@ def add_command(chat: Chat, command: Command) -> str:
     :param command: The command name
     :return:    The command name
     """
-    # Prod
-    # chat.register_command(command.get_name(), command.process_command, command.get_middleware())
-    # Test
-    chat.register_command(command.get_name(), command.process_command)
+    chat.register_command(command.get_name(), command.process_command, command.get_middleware())
     return command.get_name()
 
 
@@ -121,7 +118,7 @@ async def main():
                                                               cancel_moment_cmd.get_name())
 
     # Register commands
-    command_names = add_commands(chat, [
+    command_names: List[str] = add_commands(chat, [
         pyramid_cmd,
         standing_cmd,
         my_standing_cmd,
