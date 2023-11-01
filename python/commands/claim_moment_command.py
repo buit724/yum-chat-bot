@@ -10,14 +10,6 @@ from python.state.global_state import GlobalState
 
 
 class ClaimMomentCommand(Command):
-
-    def get_middleware(self) -> Union[List[BaseCommandMiddleware], None]:
-        """
-        Everybody can use this command
-        :return: None
-        """
-        return None
-
     def __init__(self, global_state: GlobalState, repository_provider: RepositoryProvider):
         self.global_state = global_state
         self.repository_provider = repository_provider
@@ -28,6 +20,13 @@ class ClaimMomentCommand(Command):
         :return: The name of claim moment command
         """
         return "claimmoment"
+
+    def get_middleware(self) -> Union[List[BaseCommandMiddleware], None]:
+        """
+        Everybody can use this command
+        :return: None
+        """
+        return None
 
     async def process_command(self, cmd: ChatCommand) -> None:
         """
@@ -53,4 +52,3 @@ class ClaimMomentCommand(Command):
         self.repository_provider.user_moment_assoc_repository.assoc_user_moment(user, current_moment)
         print(f"User {user.display_name} with id {user.id} has claimed the moment")
         await cmd.reply("You have successfully claimed this moment")
-    

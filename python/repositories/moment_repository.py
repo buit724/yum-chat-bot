@@ -12,6 +12,10 @@ class MomentRepository:
         self.session.commit()
         return moment
 
-    def update_moment(self, moment: Moment):
+    def update_moment(self, moment: Moment) -> None:
         self.session.merge(moment)
+        self.session.commit()
+
+    def delete_moment(self, moment: Moment) -> None:
+        self.session.delete(moment)
         self.session.commit()

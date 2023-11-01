@@ -12,7 +12,9 @@ import configparser
 import sys
 
 from twitchAPI.type import AuthScope, ChatEvent
+from sqlalchemy import event
 
+from python.commands.cancel_moment_command import CancelMomentCommand
 from python.commands.claim_moment_command import ClaimMomentCommand
 from python.commands.command import Command
 from python.commands.edit_moment_description_command import EditMomentDescriptionCommand
@@ -59,7 +61,10 @@ def add_command(chat: Chat, command: Command) -> str:
     :param command: The command name
     :return:    The command name
     """
-    chat.register_command(command.get_name(), command.process_command, command.get_middleware())
+    # Prod
+    # chat.register_command(command.get_name(), command.process_command, command.get_middleware())
+    # Test
+    chat.register_command(command.get_name(), command.process_command)
     return command.get_name()
 
 
@@ -85,7 +90,10 @@ async def main():
     # Setup objects
     scheduler: AsyncIOScheduler = AsyncIOScheduler()
     global_state: GlobalState = GlobalState()
+
+    # Create sqlalchemy engine that enforce sqlite fk
     engine: Engine = create_engine(f"sqlite:///{config['database']['PATH']}", echo=True)
+    event.listen(engine, 'connect', lambda c, _: c.execute('pragma foreign_keys=on'))
     session: Session = sessionmaker(bind=engine)()
     repository_provider: RepositoryProvider = RepositoryProvider(session)
 
@@ -98,19 +106,24 @@ async def main():
     edit_moment_description_cmd: EditMomentDescriptionCommand = EditMomentDescriptionCommand(global_state,
                                                                                              repository_provider)
     claim_moment_cmd: ClaimMomentCommand = ClaimMomentCommand(global_state, repository_provider)
+    cancel_moment_cmd: CancelMomentCommand = CancelMomentCommand(global_state, repository_provider, twitch,
+                                                                 broadcaster_id, moderator_id)
     start_moment_cmd: StartMomentCommand = StartMomentCommand(global_state, repository_provider, scheduler, twitch,
+                                                              int(config['channel']['DURATION']),
                                                               broadcaster_id, moderator_id, COMMAND_PREFIX,
                                                               claim_moment_cmd.get_name(),
                                                               edit_moment_name_cmd.get_name(),
-                                                              edit_moment_description_cmd.get_name())
+                                                              edit_moment_description_cmd.get_name(),
+                                                              cancel_moment_cmd.get_name())
 
     # Register commands
     command_names = add_commands(chat, [
         pyramid_cmd,
         edit_moment_name_cmd,
         edit_moment_description_cmd,
-        start_moment_cmd,
-        claim_moment_cmd
+        claim_moment_cmd,
+        cancel_moment_cmd,
+        start_moment_cmd
     ])
 
     # Register show available commands
