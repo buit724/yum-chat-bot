@@ -1,6 +1,7 @@
-from typing import List
+from typing import List, Union
 
 from twitchAPI.chat import ChatCommand
+from twitchAPI.chat.middleware import UserRestriction, BaseCommandMiddleware
 
 from python.commands.command import Command
 
@@ -8,16 +9,29 @@ from python.commands.command import Command
 class PyramidCommand(Command):
     MAX_PYRAMID_WIDTH: int = 5
 
-    async def process_command(self, cmd: ChatCommand):
+    def get_middleware(self) -> Union[List[BaseCommandMiddleware], None]:
+        """
+        Only myself can use it
+        :return: The user middleware with only myself
+        """
+        return [UserRestriction(allowed_users=['buit724'])]
+
+    def get_name(self) -> str:
+        """
+        Get the name of this build pyramid command
+        :return: Name of build pyramid command
+        """
+        return "pyramid"
+
+    async def process_command(self, cmd: ChatCommand) -> None:
         """
         Send multiple messages to build a pyramid with width specified by the user using the specified emote
         Usage: !yum_pyramid [emote] [pyramid_width <= 5]
-        :param cmd:     The command with the emote and
+        :param cmd:     The command with the emote and width
         :return:
         """
-
         build_pyramid_usage: str = f"Usage: !yum_pyramid [emote] [pyramid_width <= {self.MAX_PYRAMID_WIDTH}]"
-        args: List[str] = cmd.parameter.strip().split(" ")
+        args: List[str] = cmd.parameter.strip().split()
 
         # Arg count check (at least 2)
         if len(args) < 2:

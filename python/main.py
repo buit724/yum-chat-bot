@@ -1,7 +1,9 @@
-from typing import Callable, Awaitable, List
+from typing import List
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from twitchAPI.chat import Chat, ChatMessage, EventData, ChatCommand
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from twitchAPI.chat import Chat, ChatMessage, EventData
 from twitchAPI.object.api import TwitchUser
 from twitchAPI.twitch import Twitch
 
@@ -10,14 +12,23 @@ import configparser
 import sys
 
 from twitchAPI.type import AuthScope, ChatEvent
+from sqlalchemy import event
 
+from python.commands.cancel_moment_command import CancelMomentCommand
 from python.commands.claim_moment_command import ClaimMomentCommand
-from python.commands.give_moment_command import GiveMomentCommand
+from python.commands.command import Command
+from python.commands.edit_moment_description_command import EditMomentDescriptionCommand
+from python.commands.edit_moment_name_command import EditMomentNameCommand
+from python.commands.my_standing_command import MyStandingCommand
+from python.commands.standing_command import StandingCommand
+from python.commands.start_moment_command import StartMomentCommand
 from python.commands.pyramid_command import PyramidCommand
 from python.commands.show_commands_command import ShowCommandsCommand
+from python.repositories.repository_provider import RepositoryProvider
+from python.state.global_state import GlobalState
 
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT, AuthScope.MODERATOR_MANAGE_ANNOUNCEMENTS]
-COMMAND_PREFIX = "!yum"
+COMMAND_PREFIX = "!y"
 
 
 # this will be called when the event READY is triggered, which will be on bot start
@@ -34,27 +45,36 @@ async def on_message(msg: ChatMessage):
     print(f"Got a message from {msg.user.display_name}: {msg.text}")
 
 
-def add_command(chat: Chat, command: str, handler: Callable[[ChatCommand], Awaitable[None]]) -> str:
+def add_commands(chat: Chat, commands: List[Command]) -> List[str]:
+    """
+    Register all commands to chat
+    :param chat:        The chat
+    :param commands:    The commands
+    :return: The names of added commands
+    """
+    return [add_command(chat, x) for x in commands]
+
+
+def add_command(chat: Chat, command: Command) -> str:
     """
     Register the command to the chat and returns the name of the command. Should use this to keep track of all
     the commands we have added
     :param chat:    The chat
     :param command: The command name
-    :param handler: The command handler
     :return:    The command name
     """
-    chat.register_command(command, handler)
-    return command
+    chat.register_command(command.get_name(), command.process_command, command.get_middleware())
+    return command.get_name()
 
 
 async def main():
-    # initialize the twitch instance, this will by default also create an app authentication for you
+    # initialize the twitch instance with both app and user tokens
     twitch: Twitch = await Twitch(config['app']['CLIENT_ID'], config['app']['CLIENT_SECRET'])
     await twitch.set_user_authentication(config['token']['TOKEN'], USER_SCOPE, config['token']['REFRESH_TOKEN'])
 
     # get broadcaster id (ie channel id) and moderator id (ie the bot id that should be a moderator for the channel)
-    broadcaster: str = config['channel']['broadcaster']
-    users: List[TwitchUser] = [x async for x in twitch.get_users(logins=[broadcaster, config['channel']['BOT']])]
+    users: List[TwitchUser] = [x async for x in twitch.get_users(logins=[config['channel']['BROADCASTER'],
+                                                                         config['channel']['BOT']])]
     broadcaster_id: str = users[0].id
     moderator_id: str = users[1].id
 
@@ -63,31 +83,55 @@ async def main():
 
     # listen to when the bot is done starting up and ready to join channels
     chat.register_event(ChatEvent.READY, on_ready)
-    # listen to chat messages
+    # listen to chat messages (for here so we can easily see what channel we're in and getting messages)
     chat.register_event(ChatEvent.MESSAGE, on_message)
 
+    # Setup objects
     scheduler: AsyncIOScheduler = AsyncIOScheduler()
+    global_state: GlobalState = GlobalState()
+
+    # Create sqlalchemy engine that enforce sqlite fk
+    engine: Engine = create_engine(f"sqlite:///{config['database']['PATH']}", echo=config['database'].getboolean('DEBUG'))
+    event.listen(engine, 'connect', lambda c, _: c.execute('pragma foreign_keys=on'))
+    session: Session = sessionmaker(bind=engine)()
+    repository_provider: RepositoryProvider = RepositoryProvider(session)
+
+    # Set prefix so it is different from other bot commands
+    chat.set_prefix(COMMAND_PREFIX)
+
+    # Create commands
+    pyramid_cmd: PyramidCommand = PyramidCommand()
+    standing_cmd: StandingCommand = StandingCommand(repository_provider)
+    my_standing_cmd: MyStandingCommand = MyStandingCommand(repository_provider)
+    edit_moment_name_cmd: EditMomentNameCommand = EditMomentNameCommand(global_state, repository_provider)
+    edit_moment_description_cmd: EditMomentDescriptionCommand = EditMomentDescriptionCommand(global_state,
+                                                                                             repository_provider)
+    claim_moment_cmd: ClaimMomentCommand = ClaimMomentCommand(global_state, repository_provider)
+    cancel_moment_cmd: CancelMomentCommand = CancelMomentCommand(global_state, repository_provider, twitch,
+                                                                 broadcaster_id, moderator_id)
+    start_moment_cmd: StartMomentCommand = StartMomentCommand(global_state, repository_provider, scheduler, twitch,
+                                                              int(config['channel']['DURATION']),
+                                                              broadcaster_id, moderator_id, COMMAND_PREFIX,
+                                                              claim_moment_cmd.get_name(),
+                                                              edit_moment_name_cmd.get_name(),
+                                                              edit_moment_description_cmd.get_name(),
+                                                              cancel_moment_cmd.get_name())
 
     # Register commands
-    chat.set_prefix(COMMAND_PREFIX)
-    commands: List[str] = []
+    command_names: List[str] = add_commands(chat, [
+        pyramid_cmd,
+        standing_cmd,
+        my_standing_cmd,
+        edit_moment_name_cmd,
+        edit_moment_description_cmd,
+        claim_moment_cmd,
+        cancel_moment_cmd,
+        start_moment_cmd
+    ])
 
-    # Pyramid command
-    pyramid_command: PyramidCommand = PyramidCommand()
-    commands.append(add_command(chat, "p", pyramid_command.process_command))
-
-    # Give moment command
-    give_moment_command: GiveMomentCommand = GiveMomentCommand(twitch, broadcaster, broadcaster_id, moderator_id,
-                                                               scheduler)
-    commands.append(add_command(chat, "gm", give_moment_command.process_command))
-
-    # Claim moment command
-    claim_moment_command: ClaimMomentCommand = ClaimMomentCommand(broadcaster, give_moment_command)
-    commands.append(add_command(chat, "cm", claim_moment_command.process_command))
-
-    # Show available commands
-    show_commands_command: ShowCommandsCommand = ShowCommandsCommand(COMMAND_PREFIX, commands)
-    chat.register_command("commands", show_commands_command.process_command)
+    # Register show available commands
+    show_commands_command: ShowCommandsCommand = ShowCommandsCommand(COMMAND_PREFIX, command_names)
+    add_command(chat, show_commands_command)
 
     # we are done with our setup, lets start this bot up!
     chat.start()

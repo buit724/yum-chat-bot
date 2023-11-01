@@ -1,4 +1,3 @@
 twitchAPI
-flask
 APScheduler
-asgiref
+sqlalchemy
